@@ -1,6 +1,6 @@
 # Rova project context
 
-Stable facts and boundaries. Change this file only when a durable fact changes. Full detail lives in `README.md` (§8 demo, §17 build spec).
+Stable facts and boundaries. Change this file only when a durable fact changes. Setup, the demo, and the build spec live in `README.md`. The original numbered pitch and planning sections are archived in `docs/PROJECT_BRIEF.md`.
 
 ## Product in one line
 
@@ -36,8 +36,8 @@ AI made answers instant, not learning. Rova helps a 4th grader think through mat
 ## Known conflicts to resolve
 
 - **Storage vs. hosting:** the app writes a file on every request, including login. That works locally but not on Vercel (D-005, D-006).
-- **Accounts vs. privacy plan:** students have password accounts; the README's privacy plan says no child accounts.
-- **Grade:** the app is grade 4; parts of the README's business and pilot plan still assume middle school.
+- **Accounts vs. privacy plan:** students have password accounts; the archived project brief's privacy plan says no child accounts.
+- **Grade:** the app is grade 4; parts of the archived project brief's business and pilot plan still assume middle school.
 
 ## Commands
 
