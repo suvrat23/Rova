@@ -1,7 +1,7 @@
 // The question bank: built-in questions plus the ones a teacher adds, and rule-generated
 // suggestions. Every question's answer is known to code, so grading never depends on a model.
 import { check_answer } from "@/lib/math/checkAnswer";
-import { allTopics, questions, topicById, type PracticeQuestion, type TopicId } from "./curriculum";
+import { allTopics, gradeChoice, questions, topicById, type PracticeQuestion, type TopicId } from "./curriculum";
 const allTopicIds: TopicId[] = allTopics.map((t) => t.id);
 import type { BankQuestion, Material, Workspace } from "./model";
 
@@ -43,7 +43,9 @@ export function materialsFor(workspace: Workspace, topic: TopicId): Material[] {
 
 // Grades any bank question with the shared math checker (exact value, fractions and decimals allowed).
 export function gradeQuestion(q: PracticeQuestion, answer: string): boolean {
-  if (answer.length > 100 || !/^[\d\s.,/+-]+$/.test(answer.trim())) return false;
+  if (answer.length > 100) return false;
+  if (q.choices) return gradeChoice(q, answer);
+  if (!/^[\d\s.,/+-]+$/.test(answer.trim())) return false;
   return check_answer({ id: q.id, skill_id: topicById(q.topic).standard, prompt: q.prompt, answer: q.answer }, answer).correct;
 }
 
@@ -88,7 +90,7 @@ export interface Suggestion extends Draft {
   basis: string;
 }
 
-function template(topic: TopicId, rnd: () => number): Draft {
+function template(topic: TopicId, rnd: () => number): Draft | null {
   switch (topic) {
     case "place-value": {
       const digits: number[] = [];
@@ -181,6 +183,8 @@ function template(topic: TopicId, rnd: () => number): Draft {
       const k = between(rnd, 2, 5);
       return { topic, prompt: `A smoothie uses ${a} cups of fruit for every ${b} cups of juice. How many cups of juice go with ${a * k} cups of fruit?`, answer: String(b * k), hints: [`Make a ratio table: ${a} fruit to ${b} juice.`, `How did ${a} cups of fruit become ${a * k}? You multiplied by ${k}.`, `Multiply the juice by the same number: ${b} × ${k}.`], explanation: `Equivalent ratios scale both parts by the same factor: ${a}:${b} = ${a * k}:${b * k}.`, guide: `Use a ratio table: ${a} cups of fruit to ${b} cups of juice. Whatever you multiply one part by, multiply the other part by the same number.`, simple: `A ratio is a recipe. ${a} fruit with ${b} juice. Make the recipe bigger by multiplying both parts by the same number.` };
     }
+    default:
+      return null; // suggestions are written for the mathematics templates only
   }
 }
 
@@ -191,6 +195,7 @@ export function suggestedQuestions(workspace: Workspace, topic: TopicId, count =
   const out: Suggestion[] = [];
   for (let attempt = 0; attempt < 40 && out.length < count; attempt++) {
     const draft = template(topic, rnd);
+    if (!draft) break;
     if (existing.some((q) => q.prompt === draft.prompt) || out.some((q) => q.prompt === draft.prompt)) continue;
     const source = materials.length ? materials[out.length % materials.length] : undefined;
     out.push({ ...draft, key: `${topic}-${attempt}`, source: source?.id, basis: source ? `Written from ${source.title}` : `Written from the ${topicById(topic).standard} standard; add course materials to reference them` });
@@ -204,7 +209,12 @@ export function validateDraft(draft: Partial<Draft>): string | null {
   const prompt = (draft.prompt ?? "").trim();
   if (prompt.length < 8 || prompt.length > 300) return "Write the question in 8 to 300 characters.";
   const answer = (draft.answer ?? "").trim();
-  if (!answer || !/^[\d\s.,/+-]+$/.test(answer) || answer.length > 20) return "The answer must be a number (fractions like 3/4 are fine).";
+  const choices = (draft.choices ?? []).map((c) => c.trim()).filter(Boolean);
+  if (choices.length) {
+    if (choices.length < 2 || choices.length > 4 || choices.some((c) => c.length > 80)) return "Give 2 to 4 choices of up to 80 characters each.";
+    if (new Set(choices.map((c) => c.toLowerCase())).size !== choices.length) return "Each choice must be different.";
+    if (!choices.includes(answer)) return "Mark one of the choices as the answer.";
+  } else if (!answer || !/^[\d\s.,/+-]+$/.test(answer) || answer.length > 20) return "The answer must be a number (fractions like 3/4 are fine), or add choices for a multiple-choice question.";
   const hints = (draft.hints ?? []).map((h) => h.trim()).filter(Boolean);
   if (hints.length < 1 || hints.some((h) => h.length > 200)) return "Add at least one hint (each up to 200 characters).";
   // A hint may use the numbers in the problem, but it must not say "the answer is 12" or "... = 12".

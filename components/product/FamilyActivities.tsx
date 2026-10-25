@@ -2,11 +2,12 @@
 import { useState } from "react";
 import { familyActivities } from "@/lib/product/insights";
 import type { Learner, Profile, Workspace } from "@/lib/product/model";
+import type { SubjectId } from "@/lib/product/curriculum";
 import { Icon } from "./Brand";
 import type { Mutate } from "./Shared";
 
-export function FamilyActivities({ child, profile, workspace, mutate }: { child: Learner; profile: Profile; workspace: Workspace; mutate: Mutate }) {
-  const { next, completed } = familyActivities(workspace, profile.id, child);
+export function FamilyActivities({ child, profile, workspace, subject = "math", mutate }: { child: Learner; profile: Profile; workspace: Workspace; subject?: SubjectId; mutate: Mutate }) {
+  const { next, completed } = familyActivities(workspace, profile.id, child, subject);
   const [busy, setBusy] = useState(false);
   async function toggle(key: string) {
     if (busy) return;

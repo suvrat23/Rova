@@ -1,5 +1,5 @@
 "use client";
-import { topicById } from "@/lib/product/curriculum";
+import { topicById, type SubjectId } from "@/lib/product/curriculum";
 import type { Profile, Workspace } from "@/lib/product/model";
 import { currentUnit, studentStatus } from "@/lib/product/progress";
 import { skillName, traceStatus, type TraceStatus } from "@/lib/product/rootCause";
@@ -25,22 +25,24 @@ export function ParentDashboard({
   profile,
   workspace,
   section,
+  subject,
   mutate,
 }: {
   profile: Profile;
   workspace: Workspace;
   section: string;
+  subject: SubjectId;
   mutate: Mutate;
 }) {
   const child = workspace.students[0];
   if (!child)
     return <Empty title="No child connected yet." text="Use the family code from your child’s profile to connect." />;
   const name = child.name.split(" ")[0];
-  const status = studentStatus(child, workspace);
+  const status = studentStatus(child, workspace, new Date(), subject);
   const known = status.topics.filter((t) => t.status !== "no_data");
   const onTrack = known.filter((t) => t.status === "on_track").length;
   const focus = status.focus && status.focus.status !== "on_track" ? status.focus : null;
-  const plans = workspace.plans.filter((p) => p.studentIds.includes(child.id));
+  const plans = workspace.plans.filter((p) => p.studentIds.includes(child.id) && topicById(p.topic).subject === subject);
   const focusPlan = focus && plans.find((p) => p.topic === focus.topic);
   const traces = (workspace.sessions ?? []).filter((s) => s.studentId === child.id && s.trace);
   const notes = workspace.notes.filter((n) => n.studentId === child.id).slice().reverse();
@@ -159,7 +161,7 @@ export function ParentDashboard({
         <h3 id="tonight" className="parent-section-title">
           Tonight’s 10 minutes
         </h3>
-        <FamilyActivities child={child} profile={profile} workspace={workspace} mutate={mutate} />
+        <FamilyActivities child={child} profile={profile} workspace={workspace} subject={subject} mutate={mutate} />
       </section>
 
       <section className="surface" aria-labelledby="messages">

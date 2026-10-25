@@ -20,6 +20,7 @@ The integration owner consolidates this file after merges. During feature work, 
   - Parent view: *This week* + *Progress* (D-012).
   - Hands-on visuals for every topic (pie charts for fractions and more); fixed a place-value picture that showed an answer.
   - Pictures for all 17 simulated classmates; slogans and repeated text removed across views.
+- **Subjects (branch `feat/subjects`):** a working subject picker (mathematics plus TEKS-based social studies, science, ELA, health, and beginner Spanish), 45 multiple-choice questions graded by code, choice buttons in the chat, per-subject statuses, report, question bank, and family activities. Suggestions and pictures remain mathematics only.
 - **Polish round 2 (branch `feat/polish-round-2`):** numbers on every bar segment, overview tiles jump to the learners table, sparklines removed from cards, scripted/demo wording removed from the UI, parent sparkle/wins/activity takeaways, subject and class selectors, kid-friendly explanations with pictures in the chat, interactive pie/grid/angle models, denser home page with a sticky header, and a teacher **Question bank** (course materials, suggested and teacher-written questions) with lesson question selection (random count, default 3, or hand-picked).
 - **Blocked:** deploying to Vercel (the app writes a JSON file at runtime).
 

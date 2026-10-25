@@ -1,16 +1,16 @@
-import { topicById, topics } from "./curriculum";
+import { topicById, topicsFor, type SubjectId } from "./curriculum";
 import { sessionQuestions } from "./coaching";
 import { skillPhrase } from "./rootCause";
 import { scoreFor, type CoachSession, type Learner, type Workspace } from "./model";
 
-export function supportTopics(student: Learner, workspace: Workspace) {
-  return topics.filter(topic => { const score = scoreFor(student, topic.id, workspace.attempts); return score !== null && score < 60; });
+export function supportTopics(student: Learner, workspace: Workspace, subject: SubjectId = "math") {
+  return topicsFor(subject).filter(topic => { const score = scoreFor(student, topic.id, workspace.attempts); return score !== null && score < 60; });
 }
 
-export function familyActivities(workspace: Workspace, parentId: string, child: Learner) {
+export function familyActivities(workspace: Workspace, parentId: string, child: Learner, subject: SubjectId = "math") {
   // A root cause Rova traced comes first; the automatic family update points to its activity.
   const traced = new Set((workspace.sessions ?? []).filter(s => s.studentId === child.id && s.trace).map(s => s.trace!.prerequisite));
-  const ordered = topics.map(topic => ({ ...topic, score: scoreFor(child, topic.id, workspace.attempts), done: topic.steps.every((_, i) => workspace.checks.includes(`${parentId}:${topic.id}-${i}`)) }))
+  const ordered = topicsFor(subject).map(topic => ({ ...topic, score: scoreFor(child, topic.id, workspace.attempts), done: topic.steps.every((_, i) => workspace.checks.includes(`${parentId}:${topic.id}-${i}`)) }))
     .sort((a, b) => Number(traced.has(b.id)) - Number(traced.has(a.id)) || (a.score ?? -1) - (b.score ?? -1));
   return { next: ordered.find(topic => !topic.done), completed: ordered.filter(topic => topic.done) };
 }

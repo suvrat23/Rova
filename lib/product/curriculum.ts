@@ -1,26 +1,48 @@
 import { check_answer } from "@/lib/math/checkAnswer";
+import { extraQuestions, extraTopics } from "./subjects";
 
 export type Role = "student" | "teacher" | "parent";
-export type TopicId = "place-value" | "multiplication" | "division" | "fractions" | "measurement" | "geometry" | "ratios";
-export interface Topic { id: TopicId; name: string; short: string; standard: string; description: string; symbol: string; color: string; activity: string; steps: string[]; takeaway: string }
+// Grade 4 subjects. Mathematics follows the Common Core; the others follow the Texas Essential
+// Knowledge and Skills (TEKS) chapters named in lib/product/subjects.ts.
+export type SubjectId = "math" | "social-studies" | "science" | "ela" | "health" | "spanish";
+export interface Subject { id: SubjectId; name: string; short: string; source: string }
+export const subjects: Subject[] = [
+  { id: "math", name: "Mathematics", short: "Math", source: "Common Core, grade 4" },
+  { id: "social-studies", name: "Social studies", short: "Social studies", source: "TEKS §113.15, grade 4" },
+  { id: "science", name: "Science", short: "Science", source: "TEKS §112.6, grade 4" },
+  { id: "ela", name: "English language arts", short: "ELA", source: "TEKS §110.6, grade 4" },
+  { id: "health", name: "Health education", short: "Health", source: "TEKS §115.6, grade 4" },
+  { id: "spanish", name: "Spanish", short: "Spanish", source: "Beginner Spanish syllabus" },
+];
+export function subjectById(id: string): Subject { return subjects.find(s => s.id === id) ?? subjects[0]; }
+export type TopicId = "place-value" | "multiplication" | "division" | "fractions" | "measurement" | "geometry" | "ratios"
+  | "ss-regions" | "ss-history" | "ss-government" | "sci-matter" | "sci-energy" | "sci-earth" | "ela-words" | "ela-story" | "ela-info"
+  | "he-nutrition" | "he-safety" | "he-wellness" | "sp-greetings" | "sp-numbers" | "sp-family";
+export interface Topic { id: TopicId; subject: SubjectId; name: string; short: string; standard: string; description: string; symbol: string; color: string; activity: string; steps: string[]; takeaway: string }
+// The six mathematics foundations. `topics` keeps its name because the ratio root-cause loop,
+// the sample classroom, and the tests are built on them; use `topicsFor(subject)` for a view.
 export const topics: Topic[] = [
-  { id: "place-value", name: "Place value", short: "Place value", standard: "4.NBT.A.2", description: "Big numbers, small building blocks.", symbol: "123", color: "sage", activity: "Build the biggest number", steps: ["Write four different digits on scraps of paper.", "Arrange them to make the largest number you can.", "Swap two digits. Explain how their values changed."], takeaway: "Moving a digit one place to the left makes it worth ten times as much. The biggest number puts the biggest digit furthest left." },
-  { id: "multiplication", name: "Multiplication", short: "Multiply", standard: "4.NBT.B.5", description: "Find the patterns in equal groups.", symbol: "×", color: "peach", activity: "Set the table, then double it", steps: ["Imagine four tables with six places at each.", "Ask how many places there are altogether.", "Double the tables. What happens to the total?"], takeaway: "Doubling the tables doubles the total. Multiplication counts equal groups, so more groups means a bigger total in equal steps." },
-  { id: "division", name: "Division", short: "Divide", standard: "4.NBT.B.6", description: "Share fairly. See what remains.", symbol: "÷", color: "lavender", activity: "A little sharing challenge", steps: ["Gather 24 small objects, like beans or buttons.", "Share them equally between four bowls.", "Try six bowls. Explain why each group changes."], takeaway: "The same 24 objects make bigger groups in 4 bowls (6 each) and smaller groups in 6 bowls (4 each). More groups means fewer in each." },
-  { id: "fractions", name: "Fractions", short: "Fractions", standard: "4.NF.A.1", description: "Different pieces. The same whole.", symbol: "½", color: "yellow", activity: "The paper-folding challenge", steps: ["Fold two equal-sized sheets of paper in half.", "Fold one sheet again to make four equal parts.", "Shade one half and two quarters. Ask: what do you notice?"], takeaway: "One half and two quarters cover exactly the same amount. Smaller pieces, more of them, same whole: 1/2 = 2/4." },
-  { id: "measurement", name: "Measurement", short: "Measure", standard: "4.MD.A.1", description: "Make sense of the world around you.", symbol: "↔", color: "blue", activity: "Measure your world", steps: ["Find an object about one meter long.", "Estimate its length in centimeters.", "Measure it together and compare your estimate."], takeaway: "One meter is 100 centimeters, so the centimeter number is always 100 times the meter number." },
-  { id: "geometry", name: "Shapes & angles", short: "Geometry", standard: "4.MD.C.5", description: "A new angle on everyday shapes.", symbol: "∠", color: "rose", activity: "Go on an angle hunt", steps: ["Find a right angle in your room.", "Look for an angle smaller than it and one larger.", "Draw all three and label acute, right, or obtuse."], takeaway: "A square corner is 90°. Smaller than that is acute, bigger is obtuse. Angles are about how much something turns, not how long its sides are." },
+  { id: "place-value", subject: "math", name: "Place value", short: "Place value", standard: "4.NBT.A.2", description: "Big numbers, small building blocks.", symbol: "123", color: "sage", activity: "Build the biggest number", steps: ["Write four different digits on scraps of paper.", "Arrange them to make the largest number you can.", "Swap two digits. Explain how their values changed."], takeaway: "Moving a digit one place to the left makes it worth ten times as much. The biggest number puts the biggest digit furthest left." },
+  { id: "multiplication", subject: "math", name: "Multiplication", short: "Multiply", standard: "4.NBT.B.5", description: "Find the patterns in equal groups.", symbol: "×", color: "peach", activity: "Set the table, then double it", steps: ["Imagine four tables with six places at each.", "Ask how many places there are altogether.", "Double the tables. What happens to the total?"], takeaway: "Doubling the tables doubles the total. Multiplication counts equal groups, so more groups means a bigger total in equal steps." },
+  { id: "division", subject: "math", name: "Division", short: "Divide", standard: "4.NBT.B.6", description: "Share fairly. See what remains.", symbol: "÷", color: "lavender", activity: "A little sharing challenge", steps: ["Gather 24 small objects, like beans or buttons.", "Share them equally between four bowls.", "Try six bowls. Explain why each group changes."], takeaway: "The same 24 objects make bigger groups in 4 bowls (6 each) and smaller groups in 6 bowls (4 each). More groups means fewer in each." },
+  { id: "fractions", subject: "math", name: "Fractions", short: "Fractions", standard: "4.NF.A.1", description: "Different pieces. The same whole.", symbol: "½", color: "yellow", activity: "The paper-folding challenge", steps: ["Fold two equal-sized sheets of paper in half.", "Fold one sheet again to make four equal parts.", "Shade one half and two quarters. Ask: what do you notice?"], takeaway: "One half and two quarters cover exactly the same amount. Smaller pieces, more of them, same whole: 1/2 = 2/4." },
+  { id: "measurement", subject: "math", name: "Measurement", short: "Measure", standard: "4.MD.A.1", description: "Make sense of the world around you.", symbol: "↔", color: "blue", activity: "Measure your world", steps: ["Find an object about one meter long.", "Estimate its length in centimeters.", "Measure it together and compare your estimate."], takeaway: "One meter is 100 centimeters, so the centimeter number is always 100 times the meter number." },
+  { id: "geometry", subject: "math", name: "Shapes & angles", short: "Geometry", standard: "4.MD.C.5", description: "A new angle on everyday shapes.", symbol: "∠", color: "rose", activity: "Go on an angle hunt", steps: ["Find a right angle in your room.", "Look for an angle smaller than it and one larger.", "Draw all three and label acute, right, or obtuse."], takeaway: "A square corner is 90°. Smaller than that is acute, bigger is obtuse. Angles are about how much something turns, not how long its sides are." },
 ];
 // A grade 6 stretch topic outside the six grade 4 foundations. Its struggles trace back to
 // fractions (lib/product/rootCause.ts), so it is kept out of scores, class maps, and activities.
-export const ratiosTopic: Topic = { id: "ratios", name: "Ratios", short: "Ratios", standard: "6.RP.A.3", description: "Grade 6 preview: scale a recipe, keep the taste.", symbol: "∶", color: "blue", activity: "The recipe-ratio challenge", steps: ["Pick a recipe that uses 2 cups of one thing for every 3 of another.", "Double it together. What happens to both amounts?", "Ask: why does adding the same amount to both change the taste?"], takeaway: "Doubling multiplies both amounts by 2, so the taste stays the same. Adding the same amount to both changes the ratio." };
-export const allTopics: Topic[] = [...topics, ratiosTopic];
+export const ratiosTopic: Topic = { id: "ratios", subject: "math", name: "Ratios", short: "Ratios", standard: "6.RP.A.3", description: "Grade 6 preview: scale a recipe, keep the taste.", symbol: "∶", color: "blue", activity: "The recipe-ratio challenge", steps: ["Pick a recipe that uses 2 cups of one thing for every 3 of another.", "Double it together. What happens to both amounts?", "Ask: why does adding the same amount to both change the taste?"], takeaway: "Doubling multiplies both amounts by 2, so the taste stays the same. Adding the same amount to both changes the ratio." };
+export const allTopics: Topic[] = [...topics, ...extraTopics, ratiosTopic];
 export function topicById(id: TopicId): Topic { return allTopics.find(t => t.id === id)!; }
+// The topics a view shows for a subject. Ratios stays a stretch challenge outside the lists.
+export function topicsFor(subject: SubjectId): Topic[] { return subject === "math" ? topics : extraTopics.filter(t => t.subject === subject); }
+export function subjectOf(topic: TopicId): SubjectId { return topicById(topic).subject; }
 
 // `guide` is the lesson tip the coach shares when a question opens; it never states the answer.
 // `simple` is what the coach says when a learner asks why or how: short sentences, a picture in mind, no answer.
-export interface PracticeQuestion { id: string; topic: TopicId; prompt: string; answer: string; hints: string[]; explanation: string; guide: string; simple: string; visual?: "fraction" | "groups" | "angle" }
-export const questions: PracticeQuestion[] = [
+// `choices` makes a question multiple choice: `answer` is then the text of the correct choice.
+export interface PracticeQuestion { id: string; topic: TopicId; prompt: string; answer: string; choices?: string[]; hints: string[]; explanation: string; guide: string; simple: string; visual?: "fraction" | "groups" | "angle" }
+export const mathQuestions: PracticeQuestion[] = [
   { id: "pv1", topic: "place-value", prompt: "In 34,582, what is the value of the digit 4?", answer: "4000", hints: ["Start at the ones place and move left.", "The 4 is in the thousands place.", "Multiply the digit by the value of its place: 4 × 1,000."], explanation: "The 4 represents four thousands. Each place to the left is ten times larger.", guide: "Each place is ten times the place to its right, so read the place label before deciding what a digit is worth.", simple: "Every digit has a job. The place tells you its job. The 4 is standing in the thousands place, so it counts thousands, not ones." },
   { id: "pv2", topic: "place-value", prompt: "What number is 6 thousands + 3 hundreds + 2 tens + 5 ones?", answer: "6325", hints: ["Write each place as a number first.", "Six thousands is 6,000. Three hundreds is 300.", "Add 6,000 + 300 + 20 + 5."], explanation: "Expanded form tells us the value of every digit.", guide: "Each place is ten times the place to its right, so write each part as a number in its own place.", simple: "Think of the number as a stack of blocks: thousands, hundreds, tens, ones. Write each pile as a number, then put them side by side." },
   { id: "pv3", topic: "place-value", prompt: "What is 42,736 rounded to the nearest thousand?", answer: "43000", hints: ["Find the thousands digit first.", "Look at the hundreds digit to decide whether to round up.", "The hundreds digit is 7, so move to the next thousand."], explanation: "A hundreds digit of 5 or more means round up to the next thousand.", guide: "The neighbor helps you round: the hundreds digit tells you whether to keep the thousand or move up to the next one.", simple: "Rounding asks: which thousand is this number closest to? The hundreds digit is the clue. 5 or more, go up; 4 or less, stay." },
@@ -47,10 +69,30 @@ export const questions: PracticeQuestion[] = [
 // Every question shows its picture with the question. Fractions has a second picture (the bar
 // already split) and geometry re-shows the angle beside an explanation, so those add a picture
 // to the chat.
+export const questions: PracticeQuestion[] = [...mathQuestions, ...extraQuestions];
+export const choiceLetters = ["A", "B", "C", "D", "E", "F"];
+// Reads a learner's answer to a multiple-choice question: a letter (B), a number (2), or the
+// choice text. Returns the index of the choice, or -1 when it is not an answer.
+export function choiceIndex(question: PracticeQuestion, answer: string): number {
+  const choices = question.choices ?? [];
+  const value = answer.trim().toLowerCase().replace(/[.!?)]+$/, "").trim();
+  if (!value) return -1;
+  const byText = choices.findIndex(c => c.trim().toLowerCase() === value);
+  if (byText >= 0) return byText;
+  if (/^[a-f]$/.test(value)) { const i = value.charCodeAt(0) - 97; return i < choices.length ? i : -1; }
+  if (/^[1-6]$/.test(value)) { const i = Number(value) - 1; return i < choices.length ? i : -1; }
+  return -1;
+}
+export function gradeChoice(question: PracticeQuestion, answer: string): boolean {
+  const i = choiceIndex(question, answer);
+  return i >= 0 && question.choices![i] === question.answer;
+}
 export function hasChatPicture(question: PracticeQuestion): boolean { return question.topic === "fractions" || question.topic === "geometry"; }
 
 export function gradeAnswer(questionId: string, answer: string): boolean {
   const q = questions.find((item) => item.id === questionId);
-  if (!q || answer.length > 100 || !/^[\d\s.,/+-]+$/.test(answer.trim())) return false;
+  if (!q || answer.length > 100) return false;
+  if (q.choices) return gradeChoice(q, answer);
+  if (!/^[\d\s.,/+-]+$/.test(answer.trim())) return false;
   return check_answer({ id: q.id, skill_id: topicById(q.topic).standard, prompt: q.prompt, answer: q.answer }, answer).correct;
 }

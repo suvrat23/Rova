@@ -12,7 +12,7 @@ describe("teacher safety visibility", () => {
     const workspace = sampleWorkspace();
     const session = startCoaching(workspace, "maya", "fractions", "safety-session", at);
     coachingTurn(workspace, "maya", session.id, "flag-1", "I want to die", at);
-    const html = renderToStaticMarkup(React.createElement(TeacherDashboard, { workspace, profile: sampleProfiles.teacher, section, mutate: async () => null }));
+    const html = renderToStaticMarkup(React.createElement(TeacherDashboard, { workspace, profile: sampleProfiles.teacher, section, subject: "math", mutate: async () => null }));
     expect(html).toContain('role="alert"');
     expect(html).toContain("Review safety concern · Maya Chen");
     // The safety alert is the first thing on every teacher page, before any section content.
@@ -31,7 +31,7 @@ describe("teacher safety visibility", () => {
   });
   it("does not show a safety alert for ordinary practice", () => {
     const workspace = sampleWorkspace();
-    const html = renderToStaticMarkup(React.createElement(TeacherDashboard, { workspace, profile: sampleProfiles.teacher, section: "overview", mutate: async () => null }));
+    const html = renderToStaticMarkup(React.createElement(TeacherDashboard, { workspace, profile: sampleProfiles.teacher, section: "overview", subject: "math", mutate: async () => null }));
     expect(html).not.toContain('role="alert"');
   });
 });

@@ -1,4 +1,4 @@
-import { hasChatPicture, topicById, type PracticeQuestion, type TopicId } from "./curriculum";
+import { choiceIndex, choiceLetters, hasChatPicture, topicById, type PracticeQuestion, type TopicId } from "./curriculum";
 import { bankFor, builtInFor, gradeQuestion, questionById } from "./bank";
 import type { CoachMessage, CoachSession, Plan, Workspace } from "./model";
 import { hasSafetyConcern } from "./safety";
@@ -10,7 +10,8 @@ import { classifyMistake } from "./mistakes";
 const additiveAnswers: Record<string, string> = { ra1: "7", ra2: "8", ra3: "12" };
 
 export function opening(question: PracticeQuestion): string {
-  return `Let’s work through this ${topicById(question.topic).name.toLowerCase()} question together. ${question.guide} Share a first idea, try an answer, or ask for a picture.`;
+  const invite = question.choices ? "Pick a choice, share a first idea, or ask for a hint." : "Share a first idea, try an answer, or ask for a picture.";
+  return `Let’s work through this ${topicById(question.topic).name.toLowerCase()} question together. ${question.guide} ${invite}`;
 }
 // The questions a session walks through: the lesson's chosen set, or the built-in set for free practice.
 export function sessionQuestions(workspace: Workspace, session: CoachSession): PracticeQuestion[] {
@@ -66,11 +67,21 @@ function replyFor(workspace: Workspace, session: CoachSession, input: string): {
   if (questionSolved(workspace, session, q.id)) {
     return { text: `You checked that answer successfully. ${q.explanation} Can you explain the idea in your own words? When you’re ready, continue to the next question.`, kind: "explain" };
   }
+  if (q.choices) {
+    // A letter, a number, or the choice text counts as an answer; everything else is a conversation.
+    const picked = choiceIndex(q, input.replace(/^(?:i think|my answer is|it is|it’s|it's|is it|maybe|i pick|i choose)\s+(?:it’s\s+|it's\s+)?/i, ""));
+    if (picked >= 0) {
+      const correct = q.choices[picked] === q.answer;
+      if (correct) return { text: `Yes — ${choiceLetters[picked]} checks out. ${q.explanation} What helped you decide?`, kind: "correct", correct, hints };
+      const specific = classifyMistake(q.id, q.choices[picked]) ? `${classifyMistake(q.id, q.choices[picked])!.nudge} ` : `Not ${choiceLetters[picked]}. Let’s look at one clue together. `;
+      return { text: specific + q.hints[Math.min(hints, 2)] + " Try again when you’re ready.", kind: "retry", correct, hints };
+    }
+  }
   const words: Record<string, string> = { one: "1", two: "2", three: "3", four: "4", five: "5", six: "6", seven: "7", eight: "8", nine: "9", ten: "10", ninety: "90" };
   const normalized = input.trim().toLowerCase().replace(/\b(one|two|three|four|five|six|seven|eight|nine|ten|ninety)\b/g, word => words[word]);
   const units = q.id === "fr1" ? "fourths?" : q.topic === "geometry" ? "degrees?|°" : q.id === "me1" ? "centimeters?|cm" : q.id === "me2" ? "grams?|g" : q.id === "me3" ? "minutes?|min" : q.topic === "multiplication" || q.topic === "division" ? "seedlings?|books?|stickers?|seeds?" : q.id === "ra1" ? "cups?" : q.id === "ra2" ? "miles?" : "";
   const numeric = normalized.match(new RegExp(`^(?:(?:i think|my answer is|it is|it’s|it's|is it|maybe)\\s+)?([-+]?\\d[\\d,.\\s]*(?:/\\s*\\d+)?)(?:\\s*(?:${units || "(?!)"}))?[?.!]?$`, "i"))?.[1];
-  if (numeric) {
+  if (numeric && !q.choices) {
     const correct = gradeQuestion(q, numeric);
     if (correct) return { text: `Yes — your answer checks out. ${q.explanation} What did you do differently, or what helped it click?`, kind: "correct", correct, hints };
     const specific = q.topic === "fractions" && /^(?:1|3)$/.test(numeric.trim()) && q.id === "fr1"
@@ -80,11 +91,11 @@ function replyFor(workspace: Workspace, session: CoachSession, input: string): {
       : "That doesn’t match yet. Let’s look at one step together. ";
     return { text: specific + q.hints[Math.min(hints, 2)] + " Try again when you’re ready.", kind: "retry", correct, hints };
   }
-  if (/\b(hint|help|stuck|idk|don.?t (?:know|understand)|show|picture|nudge)\b/i.test(input)) {
+  if (/\b(hint|help|stuck|idk|don.?t (?:know|understand)|show|picture|nudge|clue)\b/i.test(input)) {
     // A worked step only unlocks after an actual attempt, never by repeatedly asking.
     const level = Math.min(hints, attempted ? 2 : 1);
     const lead = hints >= 2 && !attempted ? "Let’s try a first guess before another worked step. "
-      : /\b(show|picture)\b/i.test(input) ? (q.topic === "fractions" ? "Here’s the same amount in smaller pieces. " : hasChatPicture(q) ? "Here’s the picture again. " : "Look at the picture with the question. ") : "Let’s make it smaller. ";
+      : /\b(show|picture)\b/i.test(input) ? (q.topic === "fractions" ? "Here’s the same amount in smaller pieces. " : hasChatPicture(q) ? "Here’s the picture again. " : q.choices ? "No picture for this one, but here’s a clue. " : "Look at the picture with the question. ") : q.choices ? "Let’s narrow it down. " : "Let’s make it smaller. ";
     return { text: lead + q.hints[level] + " What would you try?", kind: "hint" };
   }
   if (q.topic === "fractions" && /\b(add|added|plus)\b/i.test(input)) {
@@ -93,7 +104,7 @@ function replyFor(workspace: Workspace, session: CoachSession, input: string): {
   if (q.topic === "fractions" && /\b(both|double|doubled|twice|times|split|cut|smaller|pieces)\b/i.test(input)) {
     return { text: "That’s a useful idea to investigate: change the pieces, while keeping the whole and the shaded amount the same. " + (q.id === "fr1" ? "Imagine a line through the middle of each half. Which new pieces belong to the planted half?" : "Compare the old and new denominators. Use the same scale factor for the numerator. What would you try on top?"), kind: "explain" };
   }
-  if (/\b(why|how|mean|fraction|numerator|denominator|equivalent|multiply|divide|place|angle|unit|same|half|quarter|group|tens|hundreds|thousands|meter|centimeter|degree)\b/i.test(input)) {
+  if (/\b(why|how|mean|explain|what does|fraction|numerator|denominator|equivalent|multiply|divide|place|angle|unit|same|half|quarter|group|tens|hundreds|thousands|meter|centimeter|degree)\b/i.test(input) || (q.choices && /\b(which|what|region|branch|energy|word|story|idea|means?)\b/i.test(input))) {
     // Plain words first, then the first nudge; the chat shows the picture beside it where there is one.
     return { text: (q.simple ? q.simple + " " : "") + q.hints[0], kind: "explain" };
   }
@@ -103,7 +114,8 @@ function replyFor(workspace: Workspace, session: CoachSession, input: string): {
   if (/\b(hi|hello|hey|thanks|thank you)\b/i.test(input)) {
     return { text: "Hi! I’m here with you. Take your time. Share a first idea when you’re ready, or ask me for a hint.", kind: "encouragement" };
   }
-  return { text: "I can help with this math question, but I don’t want to guess what you mean. Tell me which part is confusing, type a number to check, or choose a hint. Your teacher can see our conversation and help with other questions.", kind: "guardrail" };
+  const subjectWord = topicById(q.topic).subject === "math" ? "math" : topicById(q.topic).name.toLowerCase();
+  return { text: `I can help with this ${subjectWord} question, but I don’t want to guess what you mean. Tell me which part is confusing, ${q.choices ? "pick a choice (A, B, C, or D)" : "type a number to check"}, or choose a hint. Your teacher can see our conversation and help with other questions.`, kind: "guardrail" };
 }
 
 export function startCoaching(workspace: Workspace, studentId: string, topic: TopicId, id: string, at: string, planId?: string, refresherFor?: string): CoachSession {

@@ -2,7 +2,7 @@
 // Nothing here is written by a model. Each fact says where it came from, so a teacher can tell
 // live evidence from a simulated starting history or a skill-map link.
 
-import { topicById, topics, type TopicId } from "./curriculum";
+import { topicById, topicsFor, type SubjectId, type TopicId } from "./curriculum";
 import { classifyMistake } from "./mistakes";
 import { scoreFor, type CoachSession, type Learner, type Workspace } from "./model";
 import { classStatuses, currentUnit, statusLabel, studentStatus, TARGET, type Status, type StudentStatus } from "./progress";
@@ -57,8 +57,8 @@ export function repeatedMistakes(workspace: Workspace, studentId: string) {
 }
 
 // Topics where most correct answers came only after hints.
-export function hintReliance(workspace: Workspace, studentId: string) {
-  return topics
+export function hintReliance(workspace: Workspace, studentId: string, subject: SubjectId = "math") {
+  return topicsFor(subject)
     .map((t) => {
       const correct = workspace.attempts.filter(
         (a) => a.studentId === studentId && a.topic === t.id && a.correct && !a.id.startsWith("sample-"),
@@ -209,8 +209,8 @@ export function needYouToday(workspace: Workspace, statuses = classStatuses(work
 
 // The topic to reteach tomorrow: where the most learners are stagnant (counted twice) or behind,
 // with the most common known mistake as the reason when there is live evidence.
-export function topReteach(workspace: Workspace, statuses = classStatuses(workspace)) {
-  const scored = topics
+export function topReteach(workspace: Workspace, statuses = classStatuses(workspace), subject: SubjectId = "math") {
+  const scored = topicsFor(subject)
     .map((t) => {
       const stuck = statuses.filter((s) => s.topics.find((x) => x.topic === t.id)?.status === "stagnant");
       const behind = statuses.filter((s) => s.topics.find((x) => x.topic === t.id)?.status === "behind");

@@ -1,6 +1,6 @@
 "use client";
 import { useMemo, useState } from "react";
-import { topicById, topics, type TopicId } from "@/lib/product/curriculum";
+import { topicById, topicsFor, type SubjectId, type TopicId } from "@/lib/product/curriculum";
 import { filterLog, paginate, type LogFilters } from "@/lib/product/interventionLog";
 import type { Learner, Profile, Workspace } from "@/lib/product/model";
 import {
@@ -32,12 +32,14 @@ const shortDate = (d: Date) => d.toLocaleDateString("en-US", { month: "short", d
 
 export function ProgressReport({
   workspace,
+  subject,
   profile,
   filters,
   onFilters,
   onOpenStudent,
 }: {
   workspace: Workspace;
+  subject: SubjectId;
   profile: Profile;
   filters: ReportFilters;
   onFilters: (f: ReportFilters) => void;
@@ -48,11 +50,12 @@ export function ProgressReport({
   const [log, setLog] = useState<Omit<LogFilters, "since" | "studentIds">>({ search: "", topic: "all", type: "all", outcome: "all" });
   const [page, setPage] = useState(1);
 
-  const report = progressReport(workspace);
+  const topics = topicsFor(subject);
+  const report = progressReport(workspace, subject);
   const unit = currentUnit();
-  const statuses = useMemo(() => classStatuses(workspace), [workspace]);
-  const history = useMemo(() => momentumHistory(workspace), [workspace]);
-  const byTopic = useMemo(() => topicStatusCounts(workspace), [workspace]);
+  const statuses = useMemo(() => classStatuses(workspace, new Date(), subject), [workspace, subject]);
+  const history = useMemo(() => momentumHistory(workspace, new Date(), subject), [workspace, subject]);
+  const byTopic = useMemo(() => topicStatusCounts(workspace, new Date(), subject), [workspace, subject]);
 
   // A learner matches the status filter by their overall status, or by that topic's status when a
   // topic is chosen too.
@@ -325,7 +328,7 @@ export function ProgressReport({
           </label>
           <select aria-label="Log topic" value={log.topic} onChange={(e) => setLogFilter({ topic: e.target.value as TopicId | "all" })}>
             <option value="all">Any topic</option>
-            {[...topics, topicById("ratios")].map((t) => (
+            {[...topics, ...(subject === "math" ? [topicById("ratios")] : [])].map((t) => (
               <option key={t.id} value={t.id}>
                 {t.name}
               </option>

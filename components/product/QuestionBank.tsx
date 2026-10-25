@@ -1,6 +1,6 @@
 "use client";
 import { useRef, useState } from "react";
-import { allTopics, type TopicId } from "@/lib/product/curriculum";
+import { choiceLetters, subjectById, topicsFor, type SubjectId, type TopicId } from "@/lib/product/curriculum";
 import { MATERIAL_FILE_LIMIT, bankFor, isBuiltIn, materialExtension, materialsFor, suggestedQuestions, validateDraft, type Draft } from "@/lib/product/bank";
 import type { Material, Workspace } from "@/lib/product/model";
 import { Icon } from "./Brand";
@@ -12,15 +12,19 @@ const kinds: { value: Material["kind"]; label: string }[] = [
   { value: "curriculum", label: "Curriculum material" },
   { value: "other", label: "Other" },
 ];
-const emptyDraft = (topic: TopicId): Draft => ({ topic, prompt: "", answer: "", hints: ["", "", ""], explanation: "", guide: "", simple: "" });
+const emptyDraft = (topic: TopicId): Draft => ({ topic, prompt: "", answer: "", choices: undefined, hints: ["", "", ""], explanation: "", guide: "", simple: "" });
 
 // Teachers see every question Rova can ask in a topic, add their own, accept suggestions, and keep
 // the course materials those questions are written from.
-export function QuestionBank({ workspace, mutate }: { workspace: Workspace; mutate: Mutate }) {
-  const [topic, setTopic] = useState<TopicId>("fractions");
-  const [draft, setDraft] = useState<Draft>(emptyDraft("fractions"));
+export function QuestionBank({ workspace, subject, mutate }: { workspace: Workspace; subject: SubjectId; mutate: Mutate }) {
+  const allTopics = topicsFor(subject);
+  const multipleChoice = subject !== "math";
+  const [topic, setTopic] = useState<TopicId>(allTopics[0].id);
+  const [draft, setDraft] = useState<Draft>(emptyDraft(allTopics[0].id));
+  // Four choice slots for the subjects whose questions are multiple choice; the answer is one of them.
+  const [choices, setChoices] = useState(["", "", "", ""]);
   const [source, setSource] = useState("");
-  const [material, setMaterial] = useState<{ title: string; kind: Material["kind"]; topics: TopicId[]; notes: string }>({ title: "", kind: "handbook", topics: ["fractions"], notes: "" });
+  const [material, setMaterial] = useState<{ title: string; kind: Material["kind"]; topics: TopicId[]; notes: string }>({ title: "", kind: "handbook", topics: [allTopics[0].id], notes: "" });
   const [file, setFile] = useState<File | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
@@ -48,10 +52,13 @@ export function QuestionBank({ workspace, mutate }: { workspace: Workspace; muta
     setError("");
   }
   async function addDraft() {
-    const problem = validateDraft(draft);
+    const filled = choices.map((c) => c.trim()).filter(Boolean);
+    const candidate: Draft = multipleChoice ? { ...draft, choices: filled } : draft;
+    const problem = validateDraft(candidate);
     if (problem) return setError(problem);
-    if (await run({ action: "question-add", ...draft, hints: draft.hints.filter((h) => h.trim()), source: source || undefined, origin: "teacher" }, "Your question is in the bank.")) {
+    if (await run({ action: "question-add", ...candidate, hints: draft.hints.filter((h) => h.trim()), source: source || undefined, origin: "teacher" }, "Your question is in the bank.")) {
       setDraft(emptyDraft(topic));
+      setChoices(["", "", "", ""]);
       setSource("");
     }
   }
@@ -180,7 +187,7 @@ export function QuestionBank({ workspace, mutate }: { workspace: Workspace; muta
         <div className="section-heading">
           <div>
             <h2>
-              {allTopics.find((t) => t.id === topic)?.name} · {bank.length} questions in the bank
+              {allTopics.find((t) => t.id === topic)?.name} · {bank.length} questions in the bank · {subjectById(subject).source}
             </h2>
             <p>Rova picks from these when you share a lesson. Every answer is checked by code.</p>
           </div>
@@ -190,8 +197,18 @@ export function QuestionBank({ workspace, mutate }: { workspace: Workspace; muta
             <li key={q.id}>
               <div>
                 <p className="bank-prompt">{q.prompt}</p>
+                {q.choices && (
+                  <ol className="bank-choices">
+                    {q.choices.map((c, i) => (
+                      <li key={c} className={c === q.answer ? "is-answer" : undefined}>
+                        <span className="choice-letter">{choiceLetters[i]}</span>
+                        {c}
+                      </li>
+                    ))}
+                  </ol>
+                )}
                 <small>
-                  Answer {q.answer} · {isBuiltIn(q.id) ? "Built in" : "Added by you"}
+                  Answer {q.choices ? choiceLetters[q.choices.indexOf(q.answer)] : q.answer} · {isBuiltIn(q.id) ? "Built in" : "Added by you"}
                   {materialName((workspace.questions ?? []).find((x) => x.id === q.id)?.source) && ` · From ${materialName((workspace.questions ?? []).find((x) => x.id === q.id)?.source)}`}
                 </small>
                 <details>
@@ -213,6 +230,7 @@ export function QuestionBank({ workspace, mutate }: { workspace: Workspace; muta
         </ol>
       </section>
 
+      {suggestions.length > 0 && (
       <section className="surface">
         <div className="section-heading">
           <div>
@@ -245,12 +263,13 @@ export function QuestionBank({ workspace, mutate }: { workspace: Workspace; muta
           ))}
         </ol>
       </section>
+      )}
 
       <section className="surface">
         <div className="section-heading">
           <div>
             <h2>Write your own</h2>
-            <p>A question, its answer, and up to three hints that guide without telling.</p>
+            <p>{multipleChoice ? "A question, four choices, the right one, and up to three hints that guide without telling." : "A question, its answer, and up to three hints that guide without telling."}</p>
           </div>
         </div>
         <form
@@ -264,10 +283,32 @@ export function QuestionBank({ workspace, mutate }: { workspace: Workspace; muta
             Question
             <textarea value={draft.prompt} maxLength={300} rows={2} onChange={(e) => setDraft({ ...draft, prompt: e.target.value })} />
           </label>
-          <label>
-            Answer (a number)
-            <input value={draft.answer} maxLength={20} onChange={(e) => setDraft({ ...draft, answer: e.target.value })} />
-          </label>
+          {multipleChoice ? (
+            <>
+              {choices.map((c, i) => (
+                <label key={i}>
+                  Choice {choiceLetters[i]}
+                  <input value={c} maxLength={80} onChange={(e) => setChoices(choices.map((x, j) => (j === i ? e.target.value : x)))} />
+                </label>
+              ))}
+              <label>
+                Correct choice
+                <select value={draft.answer} onChange={(e) => setDraft({ ...draft, answer: e.target.value })}>
+                  <option value="">Choose one</option>
+                  {choices.filter((c) => c.trim()).map((c, i) => (
+                    <option key={i} value={c.trim()}>
+                      {choiceLetters[choices.indexOf(c)]} · {c.trim()}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </>
+          ) : (
+            <label>
+              Answer (a number)
+              <input value={draft.answer} maxLength={20} onChange={(e) => setDraft({ ...draft, answer: e.target.value })} />
+            </label>
+          )}
           <label>
             Written from
             <select value={source} onChange={(e) => setSource(e.target.value)}>

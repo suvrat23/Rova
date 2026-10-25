@@ -5,7 +5,7 @@
 // by the unit's end → on track; rising at least MIN_RISE points a week but not fast enough →
 // behind schedule; otherwise → stagnant. Too few answers → not enough data.
 
-import { topics, type TopicId } from "./curriculum";
+import { allTopics, topicsFor, type SubjectId, type TopicId } from "./curriculum";
 import { scoreFor, type Attempt, type Learner, type Plan, type Workspace } from "./model";
 
 export const TARGET = 70;
@@ -81,7 +81,7 @@ export function simulatedPace(student: Learner, topic: TopicId): number {
   if (topic === "fractions" && i >= 1 && i <= 6) return i === 2 || i === 5 ? 0 : 3; // the shared fractions gap
   if (i === 11 && topic === "division") return -2; // one learner slipping in one topic
   if (i === 14 && topic === "measurement") return 1;
-  return 6 + ((i * 3 + topics.findIndex((t) => t.id === topic)) % 4);
+  return 6 + ((i * 3 + allTopics.findIndex((t) => t.id === topic)) % 4);
 }
 
 const clamp = (n: number) => Math.max(5, Math.min(100, Math.round(n)));
@@ -189,8 +189,8 @@ const rank = (s: Status) => statusOrder.indexOf(s);
 
 // A learner's overall status is their most urgent topic: any stagnant topic makes them stagnant,
 // otherwise any behind topic makes them behind.
-export function studentStatus(student: Learner, workspace: Workspace, now = new Date()): StudentStatus {
-  const all = topics.map((t) => topicStatus(student, t.id, workspace, now));
+export function studentStatus(student: Learner, workspace: Workspace, now = new Date(), subject: SubjectId = "math"): StudentStatus {
+  const all = topicsFor(subject).map((t) => topicStatus(student, t.id, workspace, now));
   const known = all.filter((t) => t.status !== "no_data");
   const focus =
     [...known].sort((a, b) => rank(a.status) - rank(b.status) || (a.projected ?? 0) - (b.projected ?? 0))[0] ??
@@ -198,9 +198,9 @@ export function studentStatus(student: Learner, workspace: Workspace, now = new 
   return { student, status: focus?.status ?? "no_data", focus, topics: all };
 }
 
-export function classStatuses(workspace: Workspace, now = new Date()): StudentStatus[] {
+export function classStatuses(workspace: Workspace, now = new Date(), subject: SubjectId = "math"): StudentStatus[] {
   return workspace.students
-    .map((s) => studentStatus(s, workspace, now))
+    .map((s) => studentStatus(s, workspace, now, subject))
     .sort((a, b) => rank(a.status) - rank(b.status) || (a.focus?.projected ?? 0) - (b.focus?.projected ?? 0));
 }
 
@@ -216,11 +216,11 @@ const worstOf = (perTopic: { status: Status }[]): Status => {
 };
 
 // Class momentum: each learner's overall status when the unit started and today.
-export function momentumHistory(workspace: Workspace, now = new Date()) {
+export function momentumHistory(workspace: Workspace, now = new Date(), subject: SubjectId = "math") {
   const unit = currentUnit(now);
   const atStart = workspace.students.map((student) => ({
     status: worstOf(
-      topics.map((t) => {
+      topicsFor(subject).map((t) => {
         const points = timeline(student, t.id, workspace, now).filter(
           (p) => new Date(p.at).getTime() <= unit.start.getTime() + DAY,
         );
@@ -230,14 +230,14 @@ export function momentumHistory(workspace: Workspace, now = new Date()) {
   }));
   return [
     { label: "Unit start", detail: shortDate(unit.start), counts: countByStatus(atStart) },
-    { label: "Today", detail: shortDate(now), counts: countByStatus(classStatuses(workspace, now)) },
+    { label: "Today", detail: shortDate(now), counts: countByStatus(classStatuses(workspace, now, subject)) },
   ];
 }
 
 // For each topic, how many learners are in each status.
-export function topicStatusCounts(workspace: Workspace, now = new Date()) {
-  const statuses = workspace.students.map((s) => studentStatus(s, workspace, now));
-  return topics.map((t) => ({
+export function topicStatusCounts(workspace: Workspace, now = new Date(), subject: SubjectId = "math") {
+  const statuses = workspace.students.map((s) => studentStatus(s, workspace, now, subject));
+  return topicsFor(subject).map((t) => ({
     topic: t,
     counts: countByStatus(statuses.map((s) => s.topics.find((x) => x.topic === t.id)!)),
     students: Object.fromEntries(
