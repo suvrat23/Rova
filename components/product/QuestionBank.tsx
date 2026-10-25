@@ -19,12 +19,14 @@ const emptyDraft = (topic: TopicId): Draft => ({ topic, prompt: "", answer: "", 
 export function QuestionBank({ workspace, subject, mutate }: { workspace: Workspace; subject: SubjectId; mutate: Mutate }) {
   const allTopics = topicsFor(subject);
   const multipleChoice = subject !== "math";
-  const [topic, setTopic] = useState<TopicId>(allTopics[0].id);
-  const [draft, setDraft] = useState<Draft>(emptyDraft(allTopics[0].id));
+  // Mathematics opens on fractions, the demo topic; other subjects open on their first topic.
+  const first = subject === "math" ? ("fractions" as TopicId) : allTopics[0].id;
+  const [topic, setTopic] = useState<TopicId>(first);
+  const [draft, setDraft] = useState<Draft>(emptyDraft(first));
   // Four choice slots for the subjects whose questions are multiple choice; the answer is one of them.
   const [choices, setChoices] = useState(["", "", "", ""]);
   const [source, setSource] = useState("");
-  const [material, setMaterial] = useState<{ title: string; kind: Material["kind"]; topics: TopicId[]; notes: string }>({ title: "", kind: "handbook", topics: [allTopics[0].id], notes: "" });
+  const [material, setMaterial] = useState<{ title: string; kind: Material["kind"]; topics: TopicId[]; notes: string }>({ title: "", kind: "handbook", topics: [first], notes: "" });
   const [file, setFile] = useState<File | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
