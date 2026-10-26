@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { hasChatPicture, topicById, type PracticeQuestion, type TopicId } from "@/lib/product/curriculum";
+import { choiceLetters, hasChatPicture, topicById, type PracticeQuestion, type TopicId } from "@/lib/product/curriculum";
 import { builtInFor, isBuiltIn, questionById } from "@/lib/product/bank";
 import type { CoachSession, Workspace } from "@/lib/product/model";
 import { Icon } from "./Brand";
@@ -57,7 +57,7 @@ export function Practice({ workspace, topicId, planId, refresherFor, sessions = 
   return <Modal title={`${topic.name} · Chat with Rova`} onClose={onClose} wide className="practice-dialog">
     {!session ? <div className="coach-welcome"><span className="topic-symbol sage"><Icon name="leaf" size={30}/></span><span className="eyebrow">A coach who helps you think</span><h3>Let’s talk it through.</h3><p>Share a guess, ask a question, or tell Rova where you’re stuck. Your conversation stays here, so you can always look back.</p><button className="btn btn-dark" onClick={start} disabled={busy}>{busy ? "Opening…" : "Start our conversation"}<Icon name="arrow"/></button>{error && <p role="alert">{error}</p>}</div>
     : <div className="practice-messenger">
-      <div className="messenger-problem"><div className="messenger-problem-meta"><span>{planId ? "Assigned lesson" : "Practice"} · Question {session.questionIndex + 1} of {set.length}</span><span>{topic.standard}</span></div><h3>{q.prompt}</h3><LessonVisual key={q.id} question={q}/></div>
+      <div className="messenger-problem"><div className="messenger-problem-meta"><span>{planId ? "Assigned lesson" : "Practice"} · Question {session.questionIndex + 1} of {set.length}</span><span>{topic.standard}</span></div><h3>{q.prompt}</h3>{q.choices && <ol className="choice-list" aria-label="Answer choices">{q.choices.map((choice, i) => <li key={choice}><button type="button" disabled={busy || solved} onClick={() => send(choiceLetters[i])}><span className="choice-letter">{choiceLetters[i]}</span>{choice}</button></li>)}</ol>}<LessonVisual key={q.id} question={q}/></div>
       <div className="messenger-thread" ref={thread} role="log" aria-label="Conversation with Rova" aria-live="polite" aria-relevant="additions" onScroll={e => { const el = e.currentTarget; followLatest.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80; }}>
         <div className="messenger-start"><Icon name="leaf" size={15}/>Rova is here to help you think</div>
         {session.messages.map((message, index) => {
@@ -73,7 +73,7 @@ export function Practice({ workspace, topicId, planId, refresherFor, sessions = 
       </div>
       <div className="messenger-compose">
         {solved ? <div className="messenger-solved" role="status"><span><Icon name="check" size={17}/>{session.completedAt ? "Lesson complete · Shared with your teacher" : "Answer checked. Nice thinking!"}</span><button className="btn btn-dark" disabled={busy} onClick={session.completedAt ? onClose : next}>{session.completedAt ? "Finish lesson" : "Next question"}<Icon name="arrow" size={16}/></button></div>
-        : <div className="messenger-suggestions">{["I’m stuck", "Show me a picture", "Why does this work?"].map(value => <button key={value} disabled={busy} onClick={() => send(value)}>{value}</button>)}</div>}
+        : <div className="messenger-suggestions">{(q.choices ? ["I’m stuck", "Give me a clue", "Explain it to me"] : ["I’m stuck", "Show me a picture", "Why does this work?"]).map(value => <button key={value} disabled={busy} onClick={() => send(value)}>{value}</button>)}</div>}
         {error && <p className="form-error" role="alert">{error}</p>}
         <form onSubmit={e => { e.preventDefault(); void send(text); }}><label className="sr-only" htmlFor="rova-message">Message Rova or try an answer</label><textarea ref={composer} id="rova-message" value={text} onChange={e => setText(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); void send(text); } }} placeholder="Message Rova or try an answer…" maxLength={600} rows={1} readOnly={busy}/><button className="messenger-send" disabled={busy || !text.trim()} aria-label={busy ? "Sending message" : "Send message"}><Icon name="arrow" size={21}/></button></form>
         <small>Your teacher can see this conversation</small>

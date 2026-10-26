@@ -1,21 +1,21 @@
 import { describe, expect, it } from "vitest";
-import { gradeAnswer, questions } from "./curriculum";
+import { gradeAnswer, mathQuestions } from "./curriculum";
 import { coachingTurn, startCoaching } from "./coaching";
 import { classifyMistake, mistakes } from "./mistakes";
 import { sampleWorkspace } from "./model";
 
 describe("common-mistake catalog", () => {
   it("covers every practice question", () => {
-    for (const q of questions) expect(mistakes[q.id]?.length, q.id).toBeGreaterThan(0);
+    for (const q of mathQuestions) expect(mistakes[q.id]?.length, q.id).toBeGreaterThan(0);
   });
 
   it("never lists a correct answer as a mistake", () => {
-    for (const q of questions)
+    for (const q of mathQuestions)
       for (const m of mistakes[q.id]) for (const a of m.answers) expect(gradeAnswer(q.id, a), `${q.id} ${a}`).toBe(false);
   });
 
   it("never gives away the answer in a nudge", () => {
-    for (const q of questions)
+    for (const q of mathQuestions)
       for (const m of mistakes[q.id]) expect(m.nudge.match(/\d[\d,]*/g) ?? [], `${q.id}: ${m.nudge}`).not.toContain(q.answer);
   });
 

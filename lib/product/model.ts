@@ -1,4 +1,4 @@
-import { topics, type Role, type TopicId } from "./curriculum";
+import { allTopics, topics, type Role, type TopicId } from "./curriculum";
 
 export interface Profile { id: string; name: string; role: Role; email?: string; school: string; goal: number; avatar: string; sample?: boolean; familyCode?: string }
 export interface Learner { id: string; name: string; scores: Partial<Record<TopicId, number>>; avatar: string }
@@ -13,7 +13,7 @@ export interface Plan { id: string; topic: TopicId; studentIds: string[]; at: st
 export interface MaterialFile { name: string; type: string; size: number; ext: string }
 export interface Material { id: string; title: string; kind: "handbook" | "textbook" | "curriculum" | "other"; topics: TopicId[]; notes: string; at: string; file?: MaterialFile }
 // A question a teacher wrote or accepted from a suggestion. Shaped like a built-in question so the coach treats it the same.
-export interface BankQuestion { id: string; topic: TopicId; prompt: string; answer: string; hints: string[]; explanation: string; guide: string; simple: string; source?: string; origin: "teacher" | "suggested"; at: string }
+export interface BankQuestion { id: string; topic: TopicId; prompt: string; answer: string; choices?: string[]; hints: string[]; explanation: string; guide: string; simple: string; source?: string; origin: "teacher" | "suggested"; at: string }
 export interface Note { id: string; studentId: string; text: string; author: string; authorId?: string; at: string; automatic?: boolean }
 // Illustrated pictures for the sample accounts (no real people). Other accounts show initials.
 export const samplePhotos: Record<string, string> = {
@@ -30,9 +30,18 @@ export const sampleProfiles: Record<Role, Profile> = {
   teacher: { id: "rivera", name: "Elena Rivera", role: "teacher", school: "Maplewood Elementary", goal: 10, avatar: "peach", sample: true },
   parent: { id: "alex", name: "Alex Chen", role: "parent", school: "Maplewood Elementary", goal: 10, avatar: "lavender", sample: true },
 };
+// Starting confidence for the subjects beyond mathematics: a shared gap in each subject's first
+// topic for a few learners, one strong learner, and the priority learner low everywhere.
+export const subjectTopics = allTopics.filter(t => t.subject !== "math");
+export function sampleSubjectScore(i: number, k: number): number {
+  if (i === 17) return 36 + ((k * 5) % 9);
+  if (k % 3 === 0 && i >= 3 && i <= 8) return 38 + i * 2;
+  if (i === 0) return [84, 71, 66, 78, 88, 62, 90, 74, 69, 81, 58, 77, 72, 65, 83][k] ?? 70;
+  return 56 + ((i * 13 + k * 7) % 41);
+}
 export function sampleWorkspace(): Workspace {
   const names = ["Maya Chen", "Oliver Brooks", "Amelia Patel", "Noah Williams", "Sophia Garcia", "Liam Johnson", "Isabella Kim", "Ethan Davis", "Ava Robinson", "Lucas Martinez", "Mia Thompson", "Aiden Wilson", "Charlotte Lee", "Henry Clark", "Harper Lewis", "Leo Anderson", "Ella Thomas", "James Walker"];
-  const students = names.map((name, i) => ({ id: i === 0 ? "maya" : `learner-${i}`, name, avatar: ["sage", "peach", "lavender", "blue"][i % 4], scores: Object.fromEntries(topics.map((t, j) => [t.id, i === 17 ? [38, 46, 41, 32, 48, 44][j] : i === 0 ? [92, 78, 65, 42, 86, 74][j] : j === 3 && i < 7 ? 35 + i * 3 : 58 + ((i * 17 + j * 11) % 40)])) }));
+  const students = names.map((name, i) => ({ id: i === 0 ? "maya" : `learner-${i}`, name, avatar: ["sage", "peach", "lavender", "blue"][i % 4], scores: { ...Object.fromEntries(topics.map((t, j) => [t.id, i === 17 ? [38, 46, 41, 32, 48, 44][j] : i === 0 ? [92, 78, 65, 42, 86, 74][j] : j === 3 && i < 7 ? 35 + i * 3 : 58 + ((i * 17 + j * 11) % 40)])), ...Object.fromEntries(subjectTopics.map((t, k) => [t.id, sampleSubjectScore(i, k)])) } }));
   const now = Date.now();
   const attempts: Attempt[] = [];
   for (let day = 6; day >= 0; day--) {
@@ -56,6 +65,12 @@ export function upgradeSampleWorkspace(workspace: Workspace): Workspace {
   if (workspace.name === "Room 4 · Math explorers") workspace.name = "Math explorers";
   // The seeded welcome note predates teacher pictures; make it match notes the teacher sends.
   for (const note of workspace.notes) if (note.id === "welcome" && note.author === "Ms. Rivera") { note.author = "Elena Rivera"; note.authorId = "rivera"; }
+  // Saved classrooms from before the other subjects existed get their starting profile for them.
+  for (const s of workspace.students) {
+    const i = s.id === "maya" ? 0 : /^learner-\d+$/.test(s.id) ? Number(s.id.replace("learner-", "")) : -1;
+    if (i < 0) continue;
+    subjectTopics.forEach((t, k) => { if (s.scores[t.id] === undefined) s.scores[t.id] = sampleSubjectScore(i, k); });
+  }
   const student = workspace.students.find(s => s.id === "learner-17" && s.name === "James Walker");
   if (student && topics.every((t, j) => student.scores[t.id] === 58 + ((17 * 17 + j * 11) % 40)) && !workspace.attempts.some(a => a.studentId === student.id && !a.id.startsWith("sample-"))) {
     topics.forEach((t, j) => { student.scores[t.id] = [38, 46, 41, 32, 48, 44][j]; });

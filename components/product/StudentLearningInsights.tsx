@@ -1,8 +1,8 @@
-import { topics, type TopicId } from "@/lib/product/curriculum";
+import { type Topic, type TopicId } from "@/lib/product/curriculum";
 import { scoreFor, type Learner, type Workspace } from "@/lib/product/model";
 import { Icon } from "./Brand";
 
-export function StudentLearningInsights({ student, workspace, onPractice }: { student: Learner; workspace: Workspace; onPractice: (topic: TopicId) => void }) {
+export function StudentLearningInsights({ student, workspace, topics, onPractice }: { student: Learner; workspace: Workspace; topics: Topic[]; onPractice: (topic: TopicId) => void }) {
   const skills = topics.map(t => ({ ...t, score: scoreFor(student, t.id, workspace.attempts) }));
   const strengths = skills.filter(t => t.score !== null && t.score >= 80);
   const growth = skills.filter(t => t.score !== null && t.score < 80).sort((a, b) => a.score! - b.score!).slice(0, 3);

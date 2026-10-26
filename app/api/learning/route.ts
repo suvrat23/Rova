@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { rm } from "node:fs/promises";
 import path from "node:path";
 import { currentAccount, database, materialsDirectory, sameOrigin, visibleWorkspace } from "@/lib/product/server";
-import { allTopics, topics, type TopicId } from "@/lib/product/curriculum";
+import { allTopics, type TopicId } from "@/lib/product/curriculum";
 import { advanceCoaching, coachingTurn, lessonProgress, startCoaching } from "@/lib/product/coaching";
 import { DEFAULT_LESSON_QUESTIONS, MAX_LESSON_QUESTIONS, bankFor, gradeQuestion, inBankOrder, isBuiltIn, pickQuestionIds, questionById, validateDraft, validateMaterial } from "@/lib/product/bank";
 import type { CoachSession } from "@/lib/product/model";
@@ -43,7 +43,7 @@ export async function POST(request: Request) {
         correct = previous?.correct ?? gradeQuestion(question, body.answer);
         if (!previous) db.workspace.attempts.push({ id, studentId: account.id, questionId: question.id, topic: question.topic, correct, hints: Math.max(0, Math.min(3, Number(body.hints) || 0)), at: now });
       } else if (body.action === "plan" && account.role === "teacher") {
-        const topic = topics.find((t) => t.id === body.topic);
+        const topic = allTopics.find((t) => t.id === body.topic && t.id !== "ratios");
         const studentIds = db.workspace.students.filter((s) => Array.isArray(body.studentIds) && body.studentIds.includes(s.id)).map((s) => s.id);
         if (!topic || !studentIds.length) return Response.json({ error: "Select a topic and at least one student." }, { status: 400 });
         // The teacher's chosen questions, or a random set from the topic's bank (default 3).
@@ -58,7 +58,8 @@ export async function POST(request: Request) {
       } else if (body.action === "question-add" && account.role === "teacher") {
         const topic = allTopics.find((t) => t.id === body.topic);
         const hints = Array.isArray(body.hints) ? body.hints.map((h: unknown) => clean(h, 200)).filter(Boolean) : [];
-        const draft = { topic: topic?.id as TopicId, prompt: clean(body.prompt, 300), answer: clean(body.answer, 20), hints, explanation: clean(body.explanation, 300), guide: clean(body.guide, 300), simple: clean(body.simple, 300) };
+        const choices = Array.isArray(body.choices) ? body.choices.map((c: unknown) => clean(c, 80)).filter(Boolean) : [];
+        const draft = { topic: topic?.id as TopicId, prompt: clean(body.prompt, 300), answer: clean(body.answer, choices.length ? 80 : 20), choices: choices.length ? choices : undefined, hints, explanation: clean(body.explanation, 300), guide: clean(body.guide, 300), simple: clean(body.simple, 300) };
         const problem = topic ? validateDraft(draft) : "Choose a math topic.";
         if (problem) return Response.json({ error: problem }, { status: 400 });
         const source = typeof body.source === "string" && db.workspace.materials?.some((m) => m.id === body.source) ? body.source : undefined;

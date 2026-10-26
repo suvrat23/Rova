@@ -124,3 +124,19 @@ describe("learning API question bank", () => {
     expect((await (await request({ action: "attempt", questionId: id, answer: "5", id: "attempt-custom-2" })).json()).correct).toBe(false);
   });
 });
+describe("learning API for the other subjects", () => {
+  it("adds a multiple-choice question and sends a science lesson", async () => {
+    state.account!.role = "teacher"; state.account!.id = "rivera";
+    const add = await request({ action: "question-add", topic: "sci-energy", prompt: "Which of these is an insulator?", answer: "Rubber", choices: ["Rubber", "Copper", "Iron", "Steel"], hints: ["Think about what blocks electricity."] });
+    expect(add.status).toBe(200);
+    const added = state.db.workspace.questions![0];
+    expect(added.choices).toEqual(["Rubber", "Copper", "Iron", "Steel"]);
+    await request({ action: "plan", topic: "sci-energy", studentIds: ["maya"], questionIds: ["sce1", added.id] });
+    expect(state.db.workspace.plans[0].questionIds).toEqual(["sce1", added.id]);
+    state.account!.role = "student"; state.account!.id = "maya";
+    const start = await (await request({ action: "coach-start", topic: "sci-energy", planId: state.db.workspace.plans[0].id })).json();
+    expect(start.session.questionIds).toEqual(["sce1", added.id]);
+    expect((await (await request({ action: "attempt", questionId: added.id, answer: "a", id: "attempt-mc-1" })).json()).correct).toBe(true);
+    expect((await (await request({ action: "attempt", questionId: added.id, answer: "Copper", id: "attempt-mc-2" })).json()).correct).toBe(false);
+  });
+});

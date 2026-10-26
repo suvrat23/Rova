@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { topicById, type TopicId } from "@/lib/product/curriculum";
+import { topicById, type SubjectId, type TopicId } from "@/lib/product/curriculum";
 import { classifyMistake } from "@/lib/product/mistakes";
 import type { Learner, Workspace } from "@/lib/product/model";
 import { currentUnit, planImpact, statusLabel, studentStatus } from "@/lib/product/progress";
@@ -57,15 +57,17 @@ export function StudentInsight({
   onAssign,
   mutate,
   onShared,
+  subject = "math",
 }: {
   workspace: Workspace;
   student: Learner;
+  subject?: SubjectId;
   onClose: () => void;
   onAssign: (topic: TopicId, studentIds: string[]) => void;
   mutate: Mutate;
   onShared: (message: string) => void;
 }) {
-  const status = studentStatus(student, workspace);
+  const status = studentStatus(student, workspace, new Date(), subject);
   const [topic, setTopic] = useState<TopicId | null>(status.focus?.topic ?? null);
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);

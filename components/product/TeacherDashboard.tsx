@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
-import { topicById, topics, type PracticeQuestion, type TopicId } from "@/lib/product/curriculum";
+import { topicById, topicsFor, type PracticeQuestion, type SubjectId, type TopicId } from "@/lib/product/curriculum";
 import { DEFAULT_LESSON_QUESTIONS, MAX_LESSON_QUESTIONS, bankFor, isBuiltIn, pickQuestionIds } from "@/lib/product/bank";
 import type { Learner, Profile, Workspace } from "@/lib/product/model";
 import {
@@ -38,13 +38,16 @@ export function TeacherDashboard({
   profile,
   workspace,
   section,
+  subject,
   mutate,
 }: {
   profile: Profile;
   workspace: Workspace;
   section: string;
+  subject: SubjectId;
   mutate: Mutate;
 }) {
+  const topics = topicsFor(subject);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<Status | "all">("all");
   const [topicFilter, setTopicFilter] = useState<TopicId | "all">("all");
@@ -67,10 +70,10 @@ export function TeacherDashboard({
     return () => cancelAnimationFrame(frame);
   }, [section, jumpToLearners]);
 
-  const statuses = useMemo(() => classStatuses(workspace), [workspace]);
+  const statuses = useMemo(() => classStatuses(workspace, new Date(), subject), [workspace, subject]);
   const counts = countByStatus(statuses);
-  const history = useMemo(() => momentumHistory(workspace), [workspace]);
-  const byTopic = useMemo(() => topicStatusCounts(workspace), [workspace]);
+  const history = useMemo(() => momentumHistory(workspace, new Date(), subject), [workspace, subject]);
+  const byTopic = useMemo(() => topicStatusCounts(workspace, new Date(), subject), [workspace, subject]);
   const today = needYouToday(workspace, statuses);
 
   function shuffle(topic: TopicId, n = count) {
@@ -180,7 +183,7 @@ export function TeacherDashboard({
             ))}
           </section>
 
-          <RootCauseAlerts workspace={workspace} mutate={mutate} onGroup={openGroup} />
+          {subject === "math" && <RootCauseAlerts workspace={workspace} mutate={mutate} onGroup={openGroup} />}
 
           <section className="surface">
             <div className="section-heading">
@@ -283,15 +286,16 @@ export function TeacherDashboard({
             </div>
             <MomentumChart history={history} onSelect={(s) => openClassroom(s)} />
           </section>
-          <ClassroomLearningChart workspace={workspace} />
+          <ClassroomLearningChart workspace={workspace} subject={subject} />
         </>
       )}
 
-      {section === "bank" && <QuestionBank workspace={workspace} mutate={mutate} />}
+      {section === "bank" && <QuestionBank workspace={workspace} subject={subject} mutate={mutate} />}
 
       {section === "report" && (
         <ProgressReport
           workspace={workspace}
+          subject={subject}
           profile={profile}
           filters={reportFilters}
           onFilters={setReportFilters}
@@ -364,6 +368,7 @@ export function TeacherDashboard({
       {selected && (
         <StudentInsight
           workspace={workspace}
+          subject={subject}
           student={selected}
           onClose={() => setSelected(null)}
           onAssign={(topic, ids) => {

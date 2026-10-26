@@ -97,6 +97,12 @@ Type the student lines exactly; the coach replies are what the app says today.
 
 Point out: the explanation is three short sentences with a picture; a wrong guess gets one specific nudge, not a lecture; and every checked answer is graded by code.
 
+## 2d. Other subjects: the same loop beyond math
+
+- In the top bar, switch **Subject** to **Science**. The student's topics become Matter & mixtures, Energy & circuits, and Earth's surface & water (TEKS §112.6). Open **Matter & mixtures** and tap a choice: the coach checks it in code, nudges on a wrong pick, and confirms the right one. Ask **Explain it to me** for plain words.
+- As the teacher, switch to **Social studies**: the tiles, topics by status, My classroom, the report, and the Question bank all follow the subject. Assign a **Regions of Texas** lesson; it appears on the student's dashboard under any subject.
+- Say: "One loop, any subject. The standards change; the way we check answers and route the teacher's next step does not."
+
 ## 3. A teacher sees what happened, quickly
 
 Sign out and log in as the teacher.

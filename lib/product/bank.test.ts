@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { sampleWorkspace } from "./model";
-import { allTopics, questions } from "./curriculum";
+import { allTopics, questions, topics } from "./curriculum";
 import { bankFor, gradeQuestion, inBankOrder, pickQuestionIds, suggestedQuestions, validateDraft } from "./bank";
 import { lessonProgress, startCoaching, coachingTurn, advanceCoaching } from "./coaching";
 
@@ -22,7 +22,7 @@ describe("question bank", () => {
   });
   it("suggests gradeable questions that never state their own answer", () => {
     const workspace = sampleWorkspace();
-    for (const topic of allTopics) {
+    for (const topic of [...topics, allTopics.find(t => t.id === "ratios")!]) {
       const suggestions = suggestedQuestions(workspace, topic.id);
       expect(suggestions.length).toBeGreaterThan(0);
       for (const s of suggestions) {
@@ -34,6 +34,7 @@ describe("question bank", () => {
         expect(s.basis).toContain("standard");
       }
     }
+    expect(suggestedQuestions(workspace, "sci-matter")).toEqual([]);
   });
   it("references a course material when one covers the topic", () => {
     const workspace = { ...sampleWorkspace(), materials: [{ id: "m1", title: "Grade 4 Handbook", kind: "handbook" as const, topics: ["fractions" as const], notes: "", at: "" }] };

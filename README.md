@@ -2,7 +2,7 @@
 
 ### Think it through. Go the distance.
 
-**A math learning app that helps students work through a problem and gives teachers and families a clear next step.**
+**A grade 4 learning app that helps students work through a problem and gives teachers and families a clear next step.**
 
 Built for **HackATL 2026** · *Designing the World After AI*
 
@@ -22,7 +22,7 @@ Students practice with hints and visual models. Teachers see the evidence behind
 
 | Workspace | What you can do |
 | --- | --- |
-| **Student** | Practice six grade 4 math foundations, ask for hints, explore interactive pictures, resume assigned lessons, and follow progress. |
+| **Student** | Practice six grade 4 math foundations plus social studies, science, ELA, health, and Spanish (TEKS-based, multiple choice), ask for hints, explore interactive pictures, resume assigned lessons, and follow progress. Switch subjects from the top bar. |
 | **Teacher** | Find learners who need support, inspect the reasons behind their status, assign small-group lessons, review conversations, and send family notes. |
 | **Parent** | See your child's progress, school support, and recent wins; read teacher notes and complete short at-home activities. |
 
@@ -136,6 +136,7 @@ Automated tests cover math checking, coaching, progress rules, assignments, API 
 
 - **Local-first prototype:** runtime storage needs a writable, persistent filesystem. The current app is not ready for Vercel deployment; a hosted database and durable upload storage are needed before that deployment.
 - **Rule-based coaching:** open-ended conversations are limited to the implemented rules. Question suggestions use number templates with material references; uploading a handbook does not turn it into an AI-generated curriculum.
+- **Other subjects are a first pass:** social studies, science, ELA, health, and Spanish each have three topics with three multiple-choice questions, written from the TEKS strands as recalled (the TEKS pages were not reachable while building), so the strand codes should be checked against the live rules. Suggestions, pictures, and the ratio root-cause loop are mathematics only.
 - **Simulated starting data:** the 18-student class, starting scores, and seeded practice history are fictional. Confidence and status are prototype indicators, not validated learning assessments.
 - **In-app communication:** family notes and updates stay inside Rova. SMS, email delivery, and a seven-day re-check in the current screens are planned.
 - **Demo use:** use fictional accounts and materials. Real-school use needs further privacy, security, and account-design work. Safety flags use limited phrase matching and support teacher review; they are not emergency notifications.
